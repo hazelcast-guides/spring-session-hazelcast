@@ -56,6 +56,9 @@ class SessionConfiguration {
                 new IndexConfig(IndexType.HASH, Hazelcast4IndexedSessionRepository.PRINCIPAL_NAME_ATTRIBUTE));
 
         // Use custom serializer to de/serialize sessions faster. This is optional.
+        // Note that, all members in a cluster and connected clients need to use the
+        // same serializer for sessions. For instance, clients cannot use this serializer
+        // where members are not configured to do so.
         SerializerConfig serializerConfig = new SerializerConfig();
         serializerConfig.setImplementation(new HazelcastSessionSerializer()).setTypeClass(MapSession.class);
         config.getSerializationConfig().addSerializerConfig(serializerConfig);
