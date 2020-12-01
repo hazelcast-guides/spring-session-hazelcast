@@ -1,46 +1,334 @@
-////
-This is the base template for Hazelcast integration module guides.
+:github-address: https://github.com/hazelcast-guides/spring-session-hazelcast
+:templates-url: templates:ROOT:page$/
 
-You can clone this repository, work on it and create your guide, and then push to a new repository.
-////
+= Spring Session Hazelcast
 
-:github-address: [github-repo-address-of-your-guide]
-
-:templates-url: https://raw.githubusercontent.com/hazelcast-guides/adoc-templates/master
-
-// Use this relative url if you are going to publish the guide on the guides site.
-// Note that this url will not work locally and raise asciidoctor errors.
-// So, complete the guide with the above url and set the below one just before 
-// publishing on the guides site.
-//
-// :templates-url: templates:ROOT:page$/
-
-= Title
-
-// Content entered directly below the header but before the first section heading is called the preamble.
+This guide will get you started to use Spring Session Hazelcast for session replication.
 
 include::{templates-url}/link-to-repo.adoc[]
 
 == What You’ll Learn
 
-// Define the problem and tell reader what he/she will learn from this guide.
+In this guide, you will deploy two Spring Boot applications that use Hazelcast for HTTP session store.
+
+Spring Session manages users' session information and supports clustered sessions rather than an application
+container-specific solution only. That is, more than one application instance can use the same store for user
+sessions. You can find more details on
+https://docs.spring.io/spring-session/docs/current/reference/html5/#introduction[Spring Session Documentation].
 
 == Prerequisites
 
-// Define the prerequisites for the guide.
+- ~10 minutes
+- JDK 1.8+
+- Apache Maven 3.2+
 
-////
-Write the steps in your guide here by making each step a different section
-////
+== Enabling HazelcastHttpSession
 
-== Summary
+Before using Hazelcast session repository, let's add the required dependencies:
 
-// Provide a quick summary
+.pom.xml
+[source, xml]
+----
+<dependency>
+    <groupId>com.hazelcast</groupId>
+    <artifactId>hazelcast</artifactId>
+    <version>${hazelcast.version}</version>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.session</groupId>
+    <artifactId>spring-session-core</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.session</groupId>
+    <artifactId>spring-session-hazelcast</artifactId>
+</dependency>
+----
 
-== See Also
+Now configure the app to use Hazelcast as HTTP session store:
 
-// Add some links to resources, such as other related guides.
-// Use relative links used on the home page (see https://raw.githubusercontent.com/hazelcast-guides/guides-site/master/home/modules/ROOT/pages/index.adoc)
+.SessionConfiguration.java
+[source, java]
+----
+@Configuration
+@EnableHazelcastHttpSession
+class SessionConfiguration {
+    // ...
+}
+----
 
-- xref:hazelcast-embedded-springboot:ROOT:index.adoc[Hazelcast in SpringBoot]
-- xref:hazelcast-quarkus:ROOT:index.adoc[Hazelcast Client for Quarkus] 
+Alternatively, you may extend `HazelcastHttpSessionConfiguration` to have more advanced configurations
+rather than using annotation based configuration:
+
+[source, java]
+----
+@Configuration
+class SessionConfiguration extends HazelcastHttpSessionConfiguration {
+    // ...
+}
+----
+
+== Creating Hazelcast Instance Bean
+
+After enabling Hazelcast HTTP Session, you need to provide a Hazelcast instance to be used by
+the session repository. This instance can be either a Hazelcast client or an embedded Hazelcast instance.
+You can see the details of client and embedded modes https://docs.hazelcast.org/docs/latest/manual/html-single/#hazelcast-topology[here] on the documentation.
+
+Notice some `Hazelcast4` prefixes in the class names. If you use an older Hazelcast version (3.x), you
+need to drop these `"4"` s:
+
+[tabs]
+====
+
+Embedded::
++
+--
+.SessionConfiguration.java
+[source, java]
+----
+@Bean
+@SpringSessionHazelcastInstance
+public HazelcastInstance hazelcastInstance() {
+    Config config = new Config();
+    config.setClusterName("spring-session-cluster");
+
+    // Add this attribute to be able to query sessions by their PRINCIPAL_NAME_ATTRIBUTE's
+    AttributeConfig attributeConfig = new AttributeConfig()
+            .setName(Hazelcast4IndexedSessionRepository.PRINCIPAL_NAME_ATTRIBUTE)
+            .setExtractorClassName(Hazelcast4PrincipalNameExtractor.class.getName());
+
+    // Configure the sessions map
+    config.getMapConfig(SESSIONS_MAP_NAME)
+            .addAttributeConfig(attributeConfig).addIndexConfig(
+            new IndexConfig(IndexType.HASH, Hazelcast4IndexedSessionRepository.PRINCIPAL_NAME_ATTRIBUTE));
+
+    // Use custom serializer to de/serialize sessions faster. This is optional.
+    SerializerConfig serializerConfig = new SerializerConfig();
+    serializerConfig.setImplementation(new HazelcastSessionSerializer()).setTypeClass(MapSession.class);
+    config.getSerializationConfig().addSerializerConfig(serializerConfig);
+
+    return Hazelcast.newHazelcastInstance(config);
+}
+----
+--
+
+Client::
++
+
+--
+.SessionConfiguration.java
+[source, java]
+----
+@Bean
+@SpringSessionHazelcastInstance
+public HazelcastInstance hazelcastInstance() {
+    ClientConfig clientConfig = new ClientConfig();
+
+    // Configure cluster member addresses to be connected.
+    clientConfig.getNetworkConfig().addAddress("127.0.0.1:5701");
+
+    // If spring-session packages do not present in Hazelcast member's classpath,
+    // these classes need to be deployed over the client. This is required since
+    // Hazelcast updates sessions via entry processors.
+    clientConfig.getUserCodeDeploymentConfig().setEnabled(true).addClass(Session.class)
+            .addClass(MapSession.class).addClass(SessionUpdateEntryProcessor.class);
+
+    return HazelcastClient.newHazelcastClient(clientConfig);
+}
+----
+
+NOTE: You need to have a running Hazelcast cluster before starting a client. See the next section for
+starting a Hazelcast cluster.
+
+NOTE: You need to enable user code deployment in member configurations as well:
+[source, xml]
+----
+<user-code-deployment enabled="true">
+    <class-cache-mode>ETERNAL</class-cache-mode>
+    <provider-mode>LOCAL_AND_CACHED_CLASSES</provider-mode>
+</user-code-deployment>
+----
+
+--
+====
+
+== Starting Hazelcast Cluster
+
+If you use Hazelcast client, you need to have a running cluster first. You can start Hazelcast members with one
+of the following methods:
+
+include::{templates-url}/start-hz-cluster.adoc[]
+
+== Using an Existing Instance
+
+Let's say you already have a Hazelcast instance created elsewhere in your application. You can configure Spring
+Session to use that instance instead of creating a new one:
+
+.SessionConfiguration.java
+[tabs]
+====
+
+Embedded::
++
+--
+[source, java]
+----
+@Bean
+@SpringSessionHazelcastInstance
+public HazelcastInstance hazelcastInstance() {
+    return Hazelcast.getHazelcastInstanceByName("existing-instance-name");
+}
+----
+--
+
+Client::
++
+--
+[source, java]
+----
+@Bean
+@SpringSessionHazelcastInstance
+public HazelcastInstance hazelcastInstance() {
+    return HazelcastClient.getHazelcastClientByName("existing-client-name");
+}
+----
+
+--
+====
+
+== Customizing Session Repository
+
+Now that you have provided a Hazelcast instance, let's configure the session repository further.
+Note that these configurations are optional and they will fall back to the defaults when not provided:
+
+.SessionConfiguration.java
+[tabs]
+====
+
+Annotation::
++
+--
+
+[source, java]
+----
+@Configuration
+@EnableHazelcastHttpSession
+class SessionConfiguration {
+
+    @Bean
+    public SessionRepositoryCustomizer<Hazelcast4IndexedSessionRepository> customize() {
+        return (sessionRepository) -> {
+            sessionRepository.setFlushMode(FlushMode.IMMEDIATE);
+            sessionRepository.setSaveMode(SaveMode.ALWAYS);
+            sessionRepository.setSessionMapName(SESSIONS_MAP_NAME);
+            sessionRepository.setDefaultMaxInactiveInterval(900);
+        };
+    }
+
+    // ...
+}
+----
+--
+
+Config Extension::
++
+--
+[source, java]
+----
+@Configuration
+class SessionConfiguration extends HazelcastHttpSessionConfiguration {
+
+    SessionConfiguration() {
+        setFlushMode(FlushMode.IMMEDIATE);
+        setSaveMode(SaveMode.ALWAYS);
+        setSessionMapName(SESSIONS_MAP_NAME);
+        setMaxInactiveIntervalInSeconds(900);
+    }
+
+    // ...
+}
+----
+--
+
+====
+
+== Interactions with Uses Sessions
+
+Once you completed the configurations, you can reach to the session repository by autowiring it:
+
+[source, java]
+----
+@Autowired
+Hazelcast4IndexedSessionRepository sessionRepository;
+----
+
+Although you do not need to reach this repository explicitly to store or load sessions, some of the methods might be
+needed such as `findByIndexNameAndIndexValue` or `findByPrincipalName`. Other than these, the following snippet will
+load and store the sessions for you:
+
+[source, java]
+----
+@GetMapping("/check")
+public String check(HttpServletRequest request) {
+    HttpSession session = request.getSession(false);
+    if (session == null) {
+        return "No session found.";
+    } else {
+        session.setAttribute("attr1", 1);
+        session.setMaxInactiveInterval(300);
+        return "Session found: " + session.getId();
+    }
+}
+----
+
+And we are ready to test Hazelcast session store now!
+
+== Creating Endpoints
+
+To test our session store behavior, create a few endpoints.
+
+In `SessionController.java` you can find 3 of them all of which are `GET` mappings for simplicity:
+
+- `/create`: If there is no session associated with the request, creates a new one with the principal attribute sent as the request parameter.
+- `/info`: Gives the session details if the request has a session.
+- `/list`: Lists all the sessions with the same principalName of the request's session.
+
+== Starting applications
+
+Let's now start two application instances to verify that both use the same session store:
+
+[source, shell]
+----
+SERVER_PORT=8080 mvn spring-boot:run
+SERVER_PORT=8081 mvn spring-boot:run
+----
+
+== Testing the Applications
+
+- Create a new session on the port 8080:
+
+image::ss1.png[]
+
+- See session info on the port 8081:
+
+image::ss2.png[]
+
+- Now create another session with the same principal. But be aware that you need to use a different browser
+or use the private mode of your browser to use separate cookies:
+
+image::ss3.png[]
+
+- Let's list all the sessions with the principal `hazelcast`. You can imagine this scenario - for example, finding
+all the active sessions of a user:
+
+image::ss4.png[]
+
+== What's more?
+
+You can check other session replication guides that serve the same purpose but with different integrations:
+
+- xref:springboot-webfilter-session-replication:ROOT:index.adoc[SpringBoot WebFilter Based Session Replication]
+- xref:springboot-tomcat-session-replication:ROOT:index.adoc[SpringBoot Tomcat Session Replication]
