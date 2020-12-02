@@ -18,8 +18,8 @@ import org.springframework.session.Session;
 import org.springframework.session.config.SessionRepositoryCustomizer;
 import org.springframework.session.hazelcast.Hazelcast4IndexedSessionRepository;
 import org.springframework.session.hazelcast.Hazelcast4PrincipalNameExtractor;
+import org.springframework.session.hazelcast.Hazelcast4SessionUpdateEntryProcessor;
 import org.springframework.session.hazelcast.HazelcastSessionSerializer;
-import org.springframework.session.hazelcast.SessionUpdateEntryProcessor;
 import org.springframework.session.hazelcast.config.annotation.SpringSessionHazelcastInstance;
 import org.springframework.session.hazelcast.config.annotation.web.http.EnableHazelcastHttpSession;
 
@@ -73,7 +73,7 @@ class SessionConfiguration {
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getNetworkConfig().addAddress("127.0.0.1:5701");
         clientConfig.getUserCodeDeploymentConfig().setEnabled(true).addClass(Session.class)
-                .addClass(MapSession.class).addClass(SessionUpdateEntryProcessor.class);
+                .addClass(MapSession.class).addClass(Hazelcast4SessionUpdateEntryProcessor.class);
         return HazelcastClient.newHazelcastClient(clientConfig);
     }
     */

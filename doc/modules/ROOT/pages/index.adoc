@@ -134,14 +134,16 @@ public HazelcastInstance hazelcastInstance() {
     // these classes need to be deployed over the client. This is required since
     // Hazelcast updates sessions via entry processors.
     clientConfig.getUserCodeDeploymentConfig().setEnabled(true).addClass(Session.class)
-            .addClass(MapSession.class).addClass(SessionUpdateEntryProcessor.class);
+            .addClass(MapSession.class).addClass(Hazelcast4SessionUpdateEntryProcessor.class);
 
     return HazelcastClient.newHazelcastClient(clientConfig);
 }
 ----
 
-NOTE: You need to have a running Hazelcast cluster before starting a client. See the next section for
-starting a Hazelcast cluster.
+NOTE: You need to have a running Hazelcast cluster before starting a client. Also, to use all
+session repository functionalities (i.e. findByPrincipalName), Hazelcast members in a cluster
+must have the map configuration shown in the `Embedded` tab before they start. See the next
+section for starting a Hazelcast cluster.
 
 NOTE: You need to enable user code deployment in member configurations as well:
 [source, xml]
