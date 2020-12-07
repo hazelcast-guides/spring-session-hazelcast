@@ -9,7 +9,7 @@ include::{templates-url}/link-to-repo.adoc[]
 
 == What You’ll Learn
 
-In this guide, you will deploy two Spring Boot applications that use Hazelcast for HTTP session store.
+In this guide, you will deploy two Spring Boot applications that use Hazelcast as HTTP session store and hence share sessions among each other.
 
 Spring Session manages users' session information and supports clustered sessions rather than an application
 container-specific solution only. That is, more than one application instance can use the same store for user
