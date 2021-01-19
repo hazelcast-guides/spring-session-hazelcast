@@ -335,3 +335,4 @@ You can check other session replication guides that serve the same purpose but w
 
 - xref:springboot-webfilter-session-replication:ROOT:index.adoc[SpringBoot WebFilter Based Session Replication]
 - xref:springboot-tomcat-session-replication:ROOT:index.adoc[SpringBoot Tomcat Session Replication]
+
