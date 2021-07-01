@@ -16,7 +16,7 @@
 	<description>Session Replication with Spring Session Hazelcast</description>
 
 	<properties>
-		<hazelcast.version>4.2</hazelcast.version>
+		<hazelcast.version>4.2.1</hazelcast.version>
 	</properties>
 
 	<dependencies>
