@@ -7,8 +7,6 @@
 :page-est-time: 10 mins
 :description: In this tutorial, you will deploy two Spring Boot applications that use Hazelcast as a HTTP session store and hence share sessions among each other.
 
-include::{templates-url}/link-to-repo.adoc[]
-
 == What You’ll Learn
 
 {description}
