@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.5.4</version>
+		<version>3.2.8</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
@@ -16,7 +16,7 @@
 	<description>Session Replication with Spring Session Hazelcast</description>
 
 	<properties>
-		<hazelcast.version>4.2.2</hazelcast.version>
+		<hazelcast.version>5.3.8</hazelcast.version>
 	</properties>
 
 	<dependencies>

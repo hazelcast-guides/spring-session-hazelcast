@@ -18,8 +18,8 @@ https://docs.spring.io/spring-session/docs/current/reference/html5/#introduction
 
 == Before you Begin
 
-- JDK 1.8+
-- Apache Maven 3.2+
+- JDK 17+
+- Apache Maven 3.6+
 
 == Enable HazelcastHttpSession
 
@@ -76,9 +76,6 @@ After enabling Hazelcast HTTP Session, you need to provide a Hazelcast instance 
 the session repository. This instance can be either a Hazelcast client or an embedded Hazelcast instance.
 You can see the details of client and embedded modes https://docs.hazelcast.org/docs/latest/manual/html-single/#hazelcast-topology[here] on the documentation.
 
-Notice some `Hazelcast4` prefixes in the class names. If you use an older Hazelcast version (3.x), you
-need to drop these `"4"` s. For instance, use `HazelcastIndexedSessionRepository` instead of
-`Hazelcast4IndexedSessionRepository`:
 
 [tabs]
 ====
@@ -97,15 +94,18 @@ public HazelcastInstance hazelcastInstance() {
 
     // Add this attribute to be able to query sessions by their PRINCIPAL_NAME_ATTRIBUTE's
     AttributeConfig attributeConfig = new AttributeConfig()
-            .setName(Hazelcast4IndexedSessionRepository.PRINCIPAL_NAME_ATTRIBUTE)
-            .setExtractorClassName(Hazelcast4PrincipalNameExtractor.class.getName());
+        .setName(HazelcastIndexedSessionRepository.PRINCIPAL_NAME_ATTRIBUTE)
+        .setExtractorClassName(PrincipalNameExtractor.class.getName());
 
     // Configure the sessions map
     config.getMapConfig(SESSIONS_MAP_NAME)
-            .addAttributeConfig(attributeConfig).addIndexConfig(
-            new IndexConfig(IndexType.HASH, Hazelcast4IndexedSessionRepository.PRINCIPAL_NAME_ATTRIBUTE));
+        .addAttributeConfig(attributeConfig).addIndexConfig(
+        new IndexConfig(IndexType.HASH, HazelcastIndexedSessionRepository.PRINCIPAL_NAME_ATTRIBUTE));
 
     // Use custom serializer to de/serialize sessions faster. This is optional.
+    // Note that, all members in a cluster and connected clients need to use the
+    // same serializer for sessions. For instance, clients cannot use this serializer
+    // where members are not configured to do so.
     SerializerConfig serializerConfig = new SerializerConfig();
     serializerConfig.setImplementation(new HazelcastSessionSerializer()).setTypeClass(MapSession.class);
     config.getSerializationConfig().addSerializerConfig(serializerConfig);
@@ -134,7 +134,7 @@ public HazelcastInstance hazelcastInstance() {
     // these classes need to be deployed over the client. This is required since
     // Hazelcast updates sessions via entry processors.
     clientConfig.getUserCodeDeploymentConfig().setEnabled(true).addClass(Session.class)
-            .addClass(MapSession.class).addClass(Hazelcast4SessionUpdateEntryProcessor.class);
+            .addClass(MapSession.class).addClass(SessionUpdateEntryProcessor.class);
 
     return HazelcastClient.newHazelcastClient(clientConfig);
 }
@@ -221,7 +221,7 @@ Annotation::
 class SessionConfiguration {
 
     @Bean
-    public SessionRepositoryCustomizer<Hazelcast4IndexedSessionRepository> customize() {
+    public SessionRepositoryCustomizer<HazelcastIndexedSessionRepository> customize() {
         return (sessionRepository) -> {
             sessionRepository.setFlushMode(FlushMode.IMMEDIATE);
             sessionRepository.setSaveMode(SaveMode.ALWAYS);
@@ -264,7 +264,7 @@ Once you completed the configurations, you can reach to the session repository b
 [source, java]
 ----
 @Autowired
-Hazelcast4IndexedSessionRepository sessionRepository;
+FindByIndexNameSessionRepository<?> sessionRepository;
 ----
 
 Although you do not need to reach this repository explicitly to store or load sessions, some of the methods might be
