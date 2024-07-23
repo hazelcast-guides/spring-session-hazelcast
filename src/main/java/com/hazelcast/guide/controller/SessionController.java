@@ -1,15 +1,5 @@
 package com.hazelcast.guide.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.session.Session;
-import org.springframework.session.hazelcast.Hazelcast4IndexedSessionRepository;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -17,14 +7,25 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.session.Session;
+import org.springframework.session.hazelcast.HazelcastIndexedSessionRepository;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 @RestController
 public class SessionController {
 
-    private static final String principalIndexName = Hazelcast4IndexedSessionRepository.PRINCIPAL_NAME_INDEX_NAME;
+    private static final String principalIndexName = HazelcastIndexedSessionRepository.PRINCIPAL_NAME_INDEX_NAME;
     private static final DateFormat formatter = new SimpleDateFormat("HH:mm:ss");
 
     @Autowired
-    Hazelcast4IndexedSessionRepository sessionRepository;
+    HazelcastIndexedSessionRepository sessionRepository;
 
     /**
      * Creates a session for the request if there is no session of the request.
