@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.Session;
 import org.springframework.session.hazelcast.HazelcastIndexedSessionRepository;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,7 +26,7 @@ public class SessionController {
     private static final DateFormat formatter = new SimpleDateFormat("HH:mm:ss");
 
     @Autowired
-    HazelcastIndexedSessionRepository sessionRepository;
+    FindByIndexNameSessionRepository<?> sessionRepository;
 
     /**
      * Creates a session for the request if there is no session of the request.
