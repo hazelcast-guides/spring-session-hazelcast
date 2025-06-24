@@ -18,8 +18,8 @@ https://docs.spring.io/spring-session/reference/index.html[Spring Session Docume
 
 == Before you Begin
 
-- JDK 1.8+
-- Apache Maven 3.2+
+- JDK 17+
+- Apache Maven 3.8+
 
 == Enable HazelcastHttpSession
 
