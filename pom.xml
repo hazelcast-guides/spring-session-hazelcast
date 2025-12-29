@@ -54,6 +54,12 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+		                <!-- On OSX IPV6 multicast discovery is broken: https://bugs.java.com/bugdatabase/view_bug.do?bug_id=7122846 -->
+				<configuration>
+				    <jvmArguments>
+					-Djava.net.preferIPv4Stack=true
+				    </jvmArguments>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
