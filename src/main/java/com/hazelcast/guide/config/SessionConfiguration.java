@@ -21,6 +21,14 @@ import java.time.Duration;
 
 import static com.hazelcast.spring.session.HazelcastSessionConfiguration.applySerializationConfig;
 
+import com.hazelcast.config.AttributeConfig;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.IndexConfig;
+import com.hazelcast.config.IndexType;
+import com.hazelcast.config.SerializerConfig;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+
 @Configuration
 @EnableHazelcastHttpSession
 class SessionConfiguration {
