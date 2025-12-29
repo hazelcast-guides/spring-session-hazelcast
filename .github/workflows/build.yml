@@ -13,7 +13,8 @@ jobs:
     strategy:
       matrix:
         java: [ 17, 25 ]
-    name: Build with JDK ${{ matrix.java }} on ${{ matrix.architecture }}
+
+    name: Build with JDK ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v6
 
