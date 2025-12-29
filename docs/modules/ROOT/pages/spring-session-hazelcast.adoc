@@ -14,12 +14,12 @@
 Spring Session manages users' session information and supports clustered sessions rather than an application
 container-specific solution only. That is, more than one application instance can use the same store for user
 sessions. You can find more details in the
-https://docs.spring.io/spring-session/docs/current/reference/html5/#introduction[Spring Session Documentation].
+https://docs.spring.io/spring-session/reference/index.html[Spring Session Documentation].
 
 == Before you Begin
 
 - JDK 17+
-- Apache Maven 3.6+
+- Apache Maven 3.8+
 
 == Enable HazelcastHttpSession
 
