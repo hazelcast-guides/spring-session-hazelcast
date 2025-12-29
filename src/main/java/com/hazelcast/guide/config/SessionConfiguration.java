@@ -24,6 +24,7 @@ class SessionConfiguration {
 
     private final String SESSIONS_MAP_NAME = "spring-session-map-name";
 
+    //tag::customization[]
     @Bean
     public SessionRepositoryCustomizer<HazelcastIndexedSessionRepository> customize() {
         return (sessionRepository) -> {
@@ -33,7 +34,9 @@ class SessionConfiguration {
             sessionRepository.setDefaultMaxInactiveInterval(Duration.ofMinutes(2));
         };
     }
+    //end::customization[]
 
+    //tag::hazelcastInstance[]
     @Bean
     @ConditionalOnExpression("${guide.useClientServer:false} == false")
     public HazelcastInstance hazelcastInstance() {
@@ -44,7 +47,9 @@ class SessionConfiguration {
 
         return Hazelcast.newHazelcastInstance(applySerializationConfig(config));
     }
+    //end::hazelcastInstance[]
 
+    //tag::hazelcastClient[]
     @Bean
     @ConditionalOnExpression("${guide.useClientServer:false}")
     public HazelcastInstance hazelcastClient() {
@@ -52,5 +57,6 @@ class SessionConfiguration {
         clientConfig.getNetworkConfig().addAddress("127.0.0.1:5701");
         return HazelcastClient.newHazelcastClient(applySerializationConfig(clientConfig));
     }
+    //end::hazelcastClient[]
 
 }
