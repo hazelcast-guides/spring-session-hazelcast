@@ -12,22 +12,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ '8' ]
-        architecture: [ 'x64' ]
-    name: Build with JDK ${{ matrix.java }} on ${{ matrix.architecture }}
-    steps:
-      - uses: actions/checkout@v2.3.4
-      - name: Setup JDK
-        uses: actions/setup-java@v1
-        with:
-          java-version: ${{ matrix.java }}
-          architecture: ${{ matrix.architecture }}
+        java: [ 17, 25 ]
 
-      - uses: actions/cache@v2.1.6
+    name: Build with JDK ${{ matrix.java }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
         with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
 
       - name: Build with Maven
-        run: mvn test
+        run: mvn verify
