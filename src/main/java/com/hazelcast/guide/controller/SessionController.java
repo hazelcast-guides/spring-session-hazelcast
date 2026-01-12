@@ -1,5 +1,14 @@
 package com.hazelcast.guide.controller;
 
+import com.hazelcast.spring.session.HazelcastIndexedSessionRepository;
+import org.springframework.http.MediaType;
+import org.springframework.session.Session;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -7,26 +16,17 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.session.FindByIndexNameSessionRepository;
-import org.springframework.session.Session;
-import org.springframework.session.hazelcast.HazelcastIndexedSessionRepository;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-
 @RestController
 public class SessionController {
 
-    private static final String principalIndexName = HazelcastIndexedSessionRepository.PRINCIPAL_NAME_INDEX_NAME;
+    private static final String PRINCIPAL_NAME_INDEX_NAME = HazelcastIndexedSessionRepository.PRINCIPAL_NAME_INDEX_NAME;
     private static final DateFormat formatter = new SimpleDateFormat("HH:mm:ss");
 
-    @Autowired
-    FindByIndexNameSessionRepository<?> sessionRepository;
+    HazelcastIndexedSessionRepository sessionRepository;
+
+    public SessionController(HazelcastIndexedSessionRepository sessionRepository) {
+        this.sessionRepository = sessionRepository;
+    }
 
     /**
      * Creates a session for the request if there is no session of the request.
@@ -40,7 +40,7 @@ public class SessionController {
         HttpSession session = request.getSession(false);
         if (session == null) {
             session = request.getSession();
-            session.setAttribute(principalIndexName, principal);
+            session.setAttribute(PRINCIPAL_NAME_INDEX_NAME, principal);
             return "Session created: " + session.getId();
         } else {
             return "Session already exists: " + session.getId();
@@ -48,9 +48,9 @@ public class SessionController {
     }
 
     /**
-     * Lists all the sessions with the same {@link #principalIndexName} of the request's session.
+     * Lists all the sessions with the same {@link #PRINCIPAL_NAME_INDEX_NAME} of the request's session.
      *
-     * @return All sessions associated with this session's {@link #principalIndexName}.
+     * @return All sessions associated with this session's {@link #PRINCIPAL_NAME_INDEX_NAME}.
      */
     @GetMapping(value = "/list", produces = MediaType.TEXT_HTML_VALUE)
     public String listSessionsByPrincipal(HttpServletRequest request) {
@@ -58,11 +58,11 @@ public class SessionController {
         if (session == null) {
             return "<html>No session found.</html>";
         }
-        String principal = (String) session.getAttribute(principalIndexName);
+        String principal = (String) session.getAttribute(PRINCIPAL_NAME_INDEX_NAME);
         Map<String, ? extends Session> sessions = sessionRepository.findByPrincipalName(principal);
         return toHtmlTable(sessions.entrySet().stream().collect(Collectors.toMap(
                 e -> e.getKey().substring(0, 8),
-                e -> "Principal: " + session.getAttribute(principalIndexName))
+                e -> "Principal: " + session.getAttribute(PRINCIPAL_NAME_INDEX_NAME))
         ));
     }
 
@@ -77,9 +77,9 @@ public class SessionController {
         if (session == null) {
             return "<html>No session found.</html>";
         }
-        Map<String, Object> attributes = new LinkedHashMap();
+        Map<String, Object> attributes = new LinkedHashMap<>();
         attributes.put("sessionId", session.getId());
-        attributes.put("principal", session.getAttribute(principalIndexName));
+        attributes.put("principal", session.getAttribute(PRINCIPAL_NAME_INDEX_NAME));
         attributes.put("created", formatter.format(new Date(session.getCreationTime())));
         attributes.put("last accessed", formatter.format(new Date(session.getLastAccessedTime())));
         return toHtmlTable(attributes);

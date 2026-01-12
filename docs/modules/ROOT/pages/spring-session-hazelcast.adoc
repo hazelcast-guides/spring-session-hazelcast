@@ -6,6 +6,7 @@
 :page-lang: java
 :page-est-time: 10 mins
 :description: In this tutorial, you will deploy two Spring Boot applications that use Hazelcast as a HTTP session store and hence share sessions among each other.
+:sourcedir: ../../../../src/main/java
 
 == What You’ll Learn
 
@@ -19,7 +20,7 @@ https://docs.spring.io/spring-session/reference/index.html[Spring Session Docume
 == Before you Begin
 
 - JDK 17+
-- Apache Maven 3.8+
+- Apache Maven 3.9+
 
 == Enable HazelcastHttpSession
 
@@ -38,12 +39,8 @@ Before using Hazelcast session repository, let's add the required dependencies:
     <artifactId>spring-boot-starter-web</artifactId>
 </dependency>
 <dependency>
-    <groupId>org.springframework.session</groupId>
-    <artifactId>spring-session-core</artifactId>
-</dependency>
-<dependency>
-    <groupId>org.springframework.session</groupId>
-    <artifactId>spring-session-hazelcast</artifactId>
+    <groupId>com.hazelcast.spring</groupId>
+    <artifactId>hazelcast-spring-session</artifactId>
 </dependency>
 ----
 
@@ -86,73 +83,23 @@ Embedded::
 .SessionConfiguration.java
 [source, java]
 ----
-@Bean
-@SpringSessionHazelcastInstance
-public HazelcastInstance hazelcastInstance() {
-    Config config = new Config();
-    config.setClusterName("spring-session-cluster");
-
-    // Add this attribute to be able to query sessions by their PRINCIPAL_NAME_ATTRIBUTE's
-    AttributeConfig attributeConfig = new AttributeConfig()
-        .setName(HazelcastIndexedSessionRepository.PRINCIPAL_NAME_ATTRIBUTE)
-        .setExtractorClassName(PrincipalNameExtractor.class.getName());
-
-    // Configure the sessions map
-    config.getMapConfig(SESSIONS_MAP_NAME)
-        .addAttributeConfig(attributeConfig).addIndexConfig(
-        new IndexConfig(IndexType.HASH, HazelcastIndexedSessionRepository.PRINCIPAL_NAME_ATTRIBUTE));
-
-    // Use custom serializer to de/serialize sessions faster. This is optional.
-    // Note that, all members in a cluster and connected clients need to use the
-    // same serializer for sessions. For instance, clients cannot use this serializer
-    // where members are not configured to do so.
-    SerializerConfig serializerConfig = new SerializerConfig();
-    serializerConfig.setImplementation(new HazelcastSessionSerializer()).setTypeClass(MapSession.class);
-    config.getSerializationConfig().addSerializerConfig(serializerConfig);
-
-    return Hazelcast.newHazelcastInstance(config);
-}
+include::{sourcedir}/com/hazelcast/guide/config/SessionConfiguration.java[tags=hazelcastInstance]
 ----
 --
 
 Client::
 +
-
 --
 .SessionConfiguration.java
 [source, java]
 ----
-@Bean
-@SpringSessionHazelcastInstance
-public HazelcastInstance hazelcastInstance() {
-    ClientConfig clientConfig = new ClientConfig();
-
-    // Configure cluster member addresses to be connected.
-    clientConfig.getNetworkConfig().addAddress("127.0.0.1:5701");
-
-    // If spring-session packages do not present in Hazelcast member's classpath,
-    // these classes need to be deployed over the client. This is required since
-    // Hazelcast updates sessions via entry processors.
-    clientConfig.getUserCodeDeploymentConfig().setEnabled(true).addClass(Session.class)
-            .addClass(MapSession.class).addClass(SessionUpdateEntryProcessor.class);
-
-    return HazelcastClient.newHazelcastClient(clientConfig);
-}
+include::{sourcedir}/com/hazelcast/guide/config/SessionConfiguration.java[tags=hazelcastClient]
 ----
 
 NOTE: You need to have a running Hazelcast cluster before starting a client. Also, to use all
-session repository functionalities (e.g. findByPrincipalName), Hazelcast members in a cluster
+session repository functionalities (e.g. `findByPrincipalName`), Hazelcast members in a cluster
 must have the map configuration shown in the `Embedded` tab before they start. See the next
 section for starting a Hazelcast cluster.
-
-NOTE: You need to enable user code deployment in member configurations as well:
-[source, xml]
-----
-<user-code-deployment enabled="true">
-    <class-cache-mode>ETERNAL</class-cache-mode>
-    <provider-mode>LOCAL_AND_CACHED_CLASSES</provider-mode>
-</user-code-deployment>
-----
 
 --
 ====
@@ -216,22 +163,7 @@ Annotation::
 
 [source, java]
 ----
-@Configuration
-@EnableHazelcastHttpSession
-class SessionConfiguration {
-
-    @Bean
-    public SessionRepositoryCustomizer<HazelcastIndexedSessionRepository> customize() {
-        return (sessionRepository) -> {
-            sessionRepository.setFlushMode(FlushMode.IMMEDIATE);
-            sessionRepository.setSaveMode(SaveMode.ALWAYS);
-            sessionRepository.setSessionMapName(SESSIONS_MAP_NAME);
-            sessionRepository.setDefaultMaxInactiveInterval(900);
-        };
-    }
-
-    // ...
-}
+include::{sourcedir}/com/hazelcast/guide/config/SessionConfiguration.java[tags=customization]
 ----
 --
 
@@ -247,7 +179,7 @@ class SessionConfiguration extends HazelcastHttpSessionConfiguration {
         setFlushMode(FlushMode.IMMEDIATE);
         setSaveMode(SaveMode.ALWAYS);
         setSessionMapName(SESSIONS_MAP_NAME);
-        setMaxInactiveIntervalInSeconds(900);
+        setMaxInactiveInterval(Duration.ofSeconds(900));
     }
 
     // ...
