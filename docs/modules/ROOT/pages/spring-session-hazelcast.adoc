@@ -6,7 +6,7 @@
 :page-lang: java
 :page-est-time: 10 mins
 :description: In this tutorial, you will deploy two Spring Boot applications that use Hazelcast as a HTTP session store and hence share sessions among each other.
-:sourcedir: ../../../../src/main/java
+:sourcedir: {examplesdir}/src/main/java
 
 == What You’ll Learn
 
